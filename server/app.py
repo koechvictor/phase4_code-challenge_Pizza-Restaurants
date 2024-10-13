@@ -94,6 +94,7 @@ def delete_restaurant(id):
 
     return make_response('', 204)
 
+
 @app.route('/pizzas', methods=['GET'])
 def pizzas():
     pizzas = Pizza.query.all()
@@ -116,6 +117,12 @@ def create_restaurant_pizza():
     if 'pizza_id' not in data or 'restaurant_id' not in data or 'price' not in data:
         return make_response(jsonify({"errors": ["Missing data"]}), 400)
 
+    pizza = Pizza.query.get(data['pizza_id'])
+    restaurant = Restaurant.query.get(data['restaurant_id'])
+
+    if not pizza or not restaurant:
+        return make_response(jsonify({"errors": ["Invalid pizza_id or restaurant_id"]}), 400)
+
     try:
         new_restaurant_pizza = RestaurantPizza(
             pizza_id=data['pizza_id'],
@@ -125,7 +132,7 @@ def create_restaurant_pizza():
         db.session.add(new_restaurant_pizza)
         db.session.commit()
         return make_response(jsonify(new_restaurant_pizza.to_dict()), 201)
-    except ValueError as e:
+    except Exception as e:
         return make_response(jsonify({"errors": [str(e)]}), 400)
 
 

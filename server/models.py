@@ -52,6 +52,14 @@ class RestaurantPizza(db.Model, SerializerMixin):
 
     serialize_only = ('id', 'price', 'restaurant_id', 'pizza_id')
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'pizza_id': self.pizza_id,
+            'restaurant_id': self.restaurant_id,
+            'price': self.price
+        }
+
 
     @validates('price')
     def validate_price(self, key, price):
