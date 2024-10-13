@@ -57,8 +57,7 @@ def get_restaurants(id):
                 "pizza_id": rp.pizza_id,
                 "price": rp.price,
                 "restaurant_id": rp.restaurant_id
-                }
-                for rp in restaurants.restaurant_pizzas
+                } for rp in restaurants.restaurant_pizzas
             ]
         }
 
@@ -99,16 +98,19 @@ def create_restaurant_pizza():
     data = request.get_json()
     
     if 'pizza_id' not in data or 'restaurant_id' not in data or 'price' not in data:
-        return make_response(jsonify({"error": "Missing data"}), 400)
+        return make_response(jsonify({"errors": ["Missing data"]}), 400)
 
-    new_restaurant_pizza = RestaurantPizza(
-        pizza_id=data['pizza_id'],
-        restaurant_id=data['restaurant_id'],
-        price=data['price']
-    )
-    db.session.add(new_restaurant_pizza)
-    db.session.commit()
-    return make_response('', 201)
+    try:
+        new_restaurant_pizza = RestaurantPizza(
+            pizza_id=data['pizza_id'],
+            restaurant_id=data['restaurant_id'],
+            price=data['price']
+        )
+        db.session.add(new_restaurant_pizza)
+        db.session.commit()
+        return make_response(jsonify(new_restaurant_pizza.to_dict()), 201)
+    except ValueError as e:
+        return make_response(jsonify({"errors": [str(e)]}), 400)
 
 
 if __name__ == '__main__':
