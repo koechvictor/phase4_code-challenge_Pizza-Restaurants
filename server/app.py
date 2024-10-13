@@ -19,12 +19,11 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-
 @app.route('/')
 def index():
     return '<h1>Code challenge</h1>'
 
-@app.route('/restaurants')
+@app.route('/restaurants', methods=['GET','POST'])
 def restaurants():
     restaurants = Restaurant.query.all()
     restaurants_list = []
@@ -39,45 +38,78 @@ def restaurants():
 
     return make_response(jsonify(restaurants_list), 200)
     
-@app.route('/restaurants/<int:id>')
+@app.route('/restaurants/<int:id>', methods=['GET','POST'])
 def get_restaurants(id):
     restaurants = Restaurant.query.get_or_404(id)
-    
+
     restaurant_dict = {
         'id': restaurants.id,
         'name': restaurants.name,
         'address': restaurants.address,
-        'pizzas': [
+        'restaurant_pizzas': [
             {
-                'id': pizza.id,
-                'name': pizza.name,
-                'ingredients': pizza.ingredients,
-                'price': restaurant_pizza.price
-            }
-            for restaurant_pizza in restaurants.restaurant_pizzas
-            for pizza in Pizza.query.filter_by(id=restaurant_pizza.pizza_id)
-        ]
-    }
+                "id": rp.id,
+                "pizza": {
+                "id": rp.pizza.id,
+                "name": rp.pizza.name,
+                "ingredients": rp.pizza.ingredients
+                },
+                "pizza_id": rp.pizza_id,
+                "price": rp.price,
+                "restaurant_id": rp.restaurant_id
+                }
+                for rp in restaurants.restaurant_pizzas
+            ]
+        }
 
     return make_response(jsonify(restaurant_dict), 200)
+
+@app.route('/restaurants/<int:id>', methods=['DELETE'])
+def delete_restaurant(id):
+    restaurant = Restaurant.query.get(id)
+
+    if restaurant is None:
+        return make_response(jsonify({"error": "Restaurant not found"}), 404)
+
+    for restaurant_pizza in restaurant.restaurant_pizzas:
+        db.session.delete(restaurant_pizza)
+
+    db.session.delete(restaurant)
+    db.session.commit()
+
+    return make_response('', 204)
+
+@app.route('/pizzas', methods=['GET'])
+def pizzas():
+    pizzas = Pizza.query.all()
+    pizzas_list = []
+
+    for pizza in pizzas:
+        pizza_dict = {
+            'id': pizza.id,
+            'name': pizza.name,
+            'ingredients': pizza.ingredients
+        }
+        pizzas_list.append(pizza_dict)
+
+    return make_response(jsonify(pizzas_list), 200)
+
+@app.route('/restaurant_pizzas', methods=['POST'])
+def create_restaurant_pizza():
+    data = request.get_json()
+    
+    if 'pizza_id' not in data or 'restaurant_id' not in data or 'price' not in data:
+        return make_response(jsonify({"error": "Missing data"}), 400)
+
+    new_restaurant_pizza = RestaurantPizza(
+        pizza_id=data['pizza_id'],
+        restaurant_id=data['restaurant_id'],
+        price=data['price']
+    )
+    db.session.add(new_restaurant_pizza)
+    db.session.commit()
+    return make_response('', 201)
 
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
-
-
-class Restaurant(db.Model, SerializerMixin):
-    __tablename__ = 'restaurants'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    address = db.Column(db.String)
-
-    # add relationship
-    restaurant_pizzas = db.relationship('RestaurantPizza', backref='restaurant', cascade="all, delete-orphan")
-
-    # add serialization rules
-
-    def __repr__(self):
-        return f'<Restaurant {self.name}>'
-
