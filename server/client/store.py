@@ -113,6 +113,7 @@ def pizzas():
 def create_restaurant_pizza():
     data = request.get_json()
     
+    # Check for missing data
     if 'pizza_id' not in data or 'restaurant_id' not in data or 'price' not in data:
         return make_response(jsonify({"errors": ["Missing data"]}), 400)
 
@@ -126,6 +127,7 @@ def create_restaurant_pizza():
         db.session.commit()
         return make_response(jsonify(new_restaurant_pizza.to_dict()), 201)
     except ValueError as e:
+        # Handle validation errors
         return make_response(jsonify({"errors": [str(e)]}), 400)
 
 
