@@ -67,7 +67,7 @@ def get_restaurants(id):
 def delete_restaurant(id):
     restaurant = Restaurant.query.get(id)
 
-    if restaurant is None:
+    if not restaurant:
         return make_response(jsonify({"error": "Restaurant not found"}), 404)
 
     for restaurant_pizza in restaurant.restaurant_pizzas:
